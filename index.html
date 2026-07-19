@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PORTAL KOMBAT</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="game-canvas"></canvas>
+
+  <!-- ==================== HUD ==================== -->
+  <div id="hud" class="screen hidden">
+    <div class="hud-top">
+      <div class="hud-side hud-left">
+        <div class="hp-block">
+          <div class="hp-name" id="hud-name-1">FIGHTER</div>
+          <div class="hp-bar"><div class="hp-chip" id="hud-chip-1"></div><div class="hp-fill" id="hud-hp-1"></div></div>
+          <div class="round-pips" id="hud-pips-1"><span class="pip"></span><span class="pip"></span></div>
+        </div>
+      </div>
+      <div class="hud-timer" id="hud-timer">99</div>
+      <div class="hud-side hud-right">
+        <div class="hp-block">
+          <div class="hp-name" id="hud-name-2">FIGHTER</div>
+          <div class="hp-bar flip"><div class="hp-chip" id="hud-chip-2"></div><div class="hp-fill" id="hud-hp-2"></div></div>
+          <div class="round-pips" id="hud-pips-2"><span class="pip"></span><span class="pip"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="combo combo-left hidden" id="combo-1"><span class="combo-num">2</span> HITS</div>
+    <div class="combo combo-right hidden" id="combo-2"><span class="combo-num">2</span> HITS</div>
+    <div id="announce" class="hidden"></div>
+  </div>
+
+  <!-- ==================== MAIN MENU ==================== -->
+  <div id="menu" class="screen">
+    <div class="menu-bg-flame"></div>
+    <div class="dragon-logo">
+      <svg viewBox="0 0 200 200" width="170" height="170">
+        <circle cx="100" cy="100" r="92" fill="none" stroke="#c9a227" stroke-width="7"/>
+        <circle cx="100" cy="100" r="80" fill="#0d0400"/>
+        <path d="M52 128 C58 96 78 72 108 66 C96 78 92 88 94 96 C112 84 138 84 150 96 C138 94 128 98 122 104 C136 108 144 120 146 134 C136 124 124 120 116 122 C120 130 118 138 112 142 C112 132 106 126 98 126 C86 126 74 132 68 142 C62 138 56 134 52 128 Z" fill="#c9a227"/>
+        <circle cx="118" cy="92" r="4" fill="#0d0400"/>
+      </svg>
+    </div>
+    <h1 class="game-title"><span>PORTAL</span> <span class="title-red">KOMBAT</span></h1>
+    <div class="menu-items">
+      <button class="menu-btn" data-mode="cpu-easy">1 PLAYER · NOVICE</button>
+      <button class="menu-btn" data-mode="cpu-medium">1 PLAYER · WARRIOR</button>
+      <button class="menu-btn" data-mode="cpu-hard">1 PLAYER · MASTER</button>
+      <button class="menu-btn" data-mode="versus">2 PLAYERS</button>
+      <button class="menu-btn small" id="btn-controls">CONTROLS</button>
+    </div>
+    <div class="menu-footer">A THREE.JS FIGHTING GAME</div>
+  </div>
+
+  <!-- ==================== CONTROLS ==================== -->
+  <div id="controls-screen" class="screen hidden">
+    <h2 class="screen-title">CONTROLS</h2>
+    <div class="controls-cols">
+      <div class="controls-col">
+        <h3>PLAYER 1</h3>
+        <table>
+          <tr><td>A / D</td><td>Walk</td></tr>
+          <tr><td>W</td><td>Jump</td></tr>
+          <tr><td>S</td><td>Crouch</td></tr>
+          <tr><td>Hold back</td><td>Block</td></tr>
+          <tr><td>U / I</td><td>Light / Heavy Punch</td></tr>
+          <tr><td>J / K</td><td>Light / Heavy Kick</td></tr>
+          <tr><td>S + I</td><td>Uppercut</td></tr>
+          <tr><td>S + K</td><td>Sweep</td></tr>
+          <tr><td>O</td><td>Special I</td></tr>
+          <tr><td>L</td><td>Special II</td></tr>
+        </table>
+      </div>
+      <div class="controls-col">
+        <h3>PLAYER 2</h3>
+        <table>
+          <tr><td>← / →</td><td>Walk</td></tr>
+          <tr><td>↑</td><td>Jump</td></tr>
+          <tr><td>↓</td><td>Crouch</td></tr>
+          <tr><td>Hold back</td><td>Block</td></tr>
+          <tr><td>Num 1 / 2</td><td>Light / Heavy Punch</td></tr>
+          <tr><td>Num 4 / 5</td><td>Light / Heavy Kick</td></tr>
+          <tr><td>↓ + Num 2</td><td>Uppercut</td></tr>
+          <tr><td>↓ + Num 5</td><td>Sweep</td></tr>
+          <tr><td>Num 3</td><td>Special I</td></tr>
+          <tr><td>Num 6</td><td>Special II</td></tr>
+        </table>
+      </div>
+    </div>
+    <button class="menu-btn" id="btn-controls-back">BACK</button>
+  </div>
+
+  <!-- ==================== CHARACTER SELECT ==================== -->
+  <div id="select" class="screen hidden">
+    <h2 class="screen-title">CHOOSE YOUR FIGHTER</h2>
+    <div class="select-status" id="select-status">PLAYER 1 — SELECT</div>
+    <div class="select-grid" id="select-grid"></div>
+    <div class="select-names">
+      <div class="select-name p1" id="select-name-1"></div>
+      <div class="select-name p2" id="select-name-2"></div>
+    </div>
+  </div>
+
+  <!-- ==================== VS SCREEN ==================== -->
+  <div id="vs" class="screen hidden">
+    <div class="vs-row">
+      <div class="vs-card"><img id="vs-img-1" alt=""><div class="vs-name" id="vs-name-1"></div></div>
+      <div class="vs-vs">VS</div>
+      <div class="vs-card"><img id="vs-img-2" alt=""><div class="vs-name" id="vs-name-2"></div></div>
+    </div>
+    <div class="vs-stage">THE BONE PIT</div>
+  </div>
+
+  <!-- ==================== VICTORY ==================== -->
+  <div id="victory" class="screen hidden">
+    <div class="victory-portrait"><img id="victory-img" alt=""></div>
+    <h2 class="victory-title" id="victory-title">WINS</h2>
+    <div class="victory-sub" id="victory-sub"></div>
+    <div class="menu-items">
+      <button class="menu-btn" id="btn-rematch">REMATCH</button>
+      <button class="menu-btn" id="btn-charselect">CHARACTER SELECT</button>
+      <button class="menu-btn" id="btn-mainmenu">MAIN MENU</button>
+    </div>
+  </div>
+
+  <button id="btn-mute" title="Mute">♪</button>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
