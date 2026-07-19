@@ -3,6 +3,21 @@ import * as THREE from 'three';
 // Particle bursts, projectile visuals, camera shake. Bursts are short-lived
 // THREE.Points clouds simulated on the CPU — cheap at this scale.
 
+// Shared soft radial-gradient dot, so points/sprites are round, not square.
+let _softTex = null;
+export function softCircleTexture() {
+  if (_softTex) return _softTex;
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const g = cv.getContext('2d');
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.4, 'rgba(255,255,255,0.7)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad; g.fillRect(0, 0, 64, 64);
+  _softTex = new THREE.CanvasTexture(cv);
+  return _softTex;
+}
+
 export class FX {
   constructor(scene) {
     this.scene = scene;
@@ -27,7 +42,7 @@ export class FX {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const mat = new THREE.PointsMaterial({
-      color, size, transparent: true, opacity: 1,
+      color, size, transparent: true, opacity: 1, map: softCircleTexture(),
       blending: THREE.AdditiveBlending, depthWrite: false,
     });
     const points = new THREE.Points(geo, mat);
@@ -81,7 +96,7 @@ export class FX {
   // short-lived glowing sprite at impact point
   flash(pos, color, scale = 1) {
     const mat = new THREE.SpriteMaterial({
-      color, transparent: true, opacity: 0.95,
+      color, transparent: true, opacity: 0.95, map: softCircleTexture(),
       blending: THREE.AdditiveBlending, depthWrite: false,
     });
     const sprite = new THREE.Sprite(mat);

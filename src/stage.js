@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { softCircleTexture } from './fx.js';
 
 // ---------------------------------------------------------------- textures
 function stoneTexture(base = '#3b3430', dark = '#241f1c') {
@@ -234,7 +235,7 @@ export function createStage(scene) {
   const emberGeo = new THREE.BufferGeometry();
   emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPos, 3));
   const embers = new THREE.Points(emberGeo, new THREE.PointsMaterial({
-    color: 0xffa540, size: 0.07, transparent: true, opacity: 0.85,
+    color: 0xffa540, size: 0.09, transparent: true, opacity: 0.85, map: softCircleTexture(),
     blending: THREE.AdditiveBlending, depthWrite: false,
   }));
   scene.add(embers);
