@@ -18,11 +18,13 @@
 <body>
 <div id="app">
   <canvas id="game-canvas"></canvas>
+  <div id="vignette"></div>
 
   <!-- ==================== HUD ==================== -->
   <div id="hud" class="screen hidden">
     <div class="hud-top">
       <div class="hud-side hud-left">
+        <div class="hud-portrait-frame"><img id="hud-portrait-1" alt=""></div>
         <div class="hp-block">
           <div class="hp-name" id="hud-name-1">FIGHTER</div>
           <div class="hp-bar"><div class="hp-chip" id="hud-chip-1"></div><div class="hp-fill" id="hud-hp-1"></div></div>
@@ -36,6 +38,7 @@
           <div class="hp-bar flip"><div class="hp-chip" id="hud-chip-2"></div><div class="hp-fill" id="hud-hp-2"></div></div>
           <div class="round-pips" id="hud-pips-2"><span class="pip"></span><span class="pip"></span></div>
         </div>
+        <div class="hud-portrait-frame"><img id="hud-portrait-2" alt=""></div>
       </div>
     </div>
     <div class="combo combo-left hidden" id="combo-1"><span class="combo-num">2</span> HITS</div>
@@ -46,6 +49,7 @@
   <!-- ==================== MAIN MENU ==================== -->
   <div id="menu" class="screen">
     <div class="menu-bg-flame"></div>
+    <div class="menu-embers"></div>
     <div class="dragon-logo">
       <svg viewBox="0 0 200 200" width="170" height="170">
         <circle cx="100" cy="100" r="92" fill="none" stroke="#c9a227" stroke-width="7"/>

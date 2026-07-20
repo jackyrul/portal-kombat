@@ -4,6 +4,7 @@ import { AI } from './ai.js';
 import { makeProjectileVisual } from './fx.js';
 import {
   MIN_SEPARATION, ROUND_TIME, ROUNDS_TO_WIN, STAGE_HALF_WIDTH, PROJECTILE_SPEED,
+  HITSTOP, HITSTOP_HEAVY,
 } from './config.js';
 
 const START_X = 3.1;
@@ -23,6 +24,7 @@ export class Game {
     this.phase = 'idle';       // intro | fight | ko | roundEnd | matchEnd
     this.phaseT = 0;
     this.timeScale = 1;
+    this.hitstopT = 0;         // impact-freeze remaining (real time)
     this.roundNum = 0;
     this.wins = [0, 0];
     this.combo = [{ count: 0 }, { count: 0 }];
@@ -65,6 +67,7 @@ export class Game {
     this.phase = 'intro';
     this.phaseT = 0;
     this.timeScale = 1;
+    this.hitstopT = 0;
     this.combo = [{ count: 0 }, { count: 0 }];
     for (const p of this.projectiles) p.visual.dispose();
     this.projectiles = [];
@@ -156,12 +159,17 @@ export class Game {
         break;
     }
 
-    if (this.ai && this.phase === 'fight') this.ai.update(dt);
-
-    for (const f of this.fighters) f.update(dt);
-    this.separate();
-    this.updateProjectiles(dt);
-    if (this.phase === 'fight') this.detectHits();
+    // hitstop: freeze fighters + projectiles for impact, camera/fx keep running
+    if (this.hitstopT > 0) {
+      this.hitstopT = Math.max(0, this.hitstopT - rawDt);
+      for (const f of this.fighters) f.bufferInput(rawDt); // don't drop presses
+    } else {
+      if (this.ai && this.phase === 'fight') this.ai.update(dt);
+      for (const f of this.fighters) f.update(dt);
+      this.separate();
+      this.updateProjectiles(dt);
+      if (this.phase === 'fight') this.detectHits();
+    }
 
     // AI pad edge-flags live outside Input's pads
     if (this.ai) this.fighters[1].pad.endFrame();
@@ -237,6 +245,7 @@ export class Game {
     else this.ui.hideCombo(i);
 
     const heavy = def.dmg >= 8;
+    if (!projectile) this.hitstopT = heavy ? HITSTOP_HEAVY : HITSTOP; // impact freeze
     if (effect) this.fx.elementBurst(impact, effect);
     else {
       this.fx.hitSpark(impact, heavy);

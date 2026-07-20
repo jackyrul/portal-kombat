@@ -222,6 +222,76 @@ export function createStage(scene) {
     scene.add(b);
   }
 
+  // --- impaled-skull spikes framing the far corners (kept off-center so they
+  // don't clutter fight readability)
+  const spearMat = new THREE.MeshStandardMaterial({ color: 0x1a1410, roughness: 1 });
+  const spearSkullMat = new THREE.MeshStandardMaterial({ color: 0x8a7960, roughness: 0.9 });
+  const spearDefs = [
+    { x: -14.5, z: -10.5, h: 5.4, lean: 0.16 }, { x: -11, z: -12.5, h: 6.2, lean: -0.1 },
+    { x: 11.5, z: -12.5, h: 5.8, lean: 0.12 }, { x: 14.5, z: -10.5, h: 4.9, lean: -0.2 },
+  ];
+  for (const s of spearDefs) {
+    const spike = new THREE.Group();
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.3, s.h, 7), spearMat);
+    shaft.position.y = s.h / 2;
+    spike.add(shaft);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.7, 7), spearMat);
+    tip.position.y = s.h + 0.35;
+    spike.add(tip);
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.52, 12, 10), spearSkullMat);
+    skull.scale.set(0.9, 1.05, 0.85);
+    skull.position.y = s.h - 0.45;
+    spike.add(skull);
+    spike.position.set(s.x, -1.6, s.z);
+    spike.rotation.z = s.lean;
+    scene.add(spike);
+  }
+
+  // --- emissive lava-glow strips along the platform's long edges
+  const edgeGlowMat = new THREE.MeshStandardMaterial({
+    color: 0x2a0a02, emissive: 0xff5a14, emissiveIntensity: 1.7, roughness: 1,
+  });
+  for (const s of [1, -1]) {
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(19.9, 0.09, 0.1), edgeGlowMat);
+    strip.position.set(0, -0.32, s * 4.1);
+    scene.add(strip);
+  }
+
+  // --- occasional lava bubble pops (single Points cloud, per-point lifecycle)
+  const BUBBLE_ZONES = [
+    () => [(Math.random() - 0.5) * 26, 4.8 + Math.random() * 2.5],   // in front of platform
+    () => [(Math.random() - 0.5) * 30, -5 - Math.random() * 7],      // behind
+    () => [(11 + Math.random() * 6) * (Math.random() < 0.5 ? 1 : -1), (Math.random() - 0.5) * 8], // sides
+  ];
+  const bubbleCount = 26;
+  const bubblePos = new Float32Array(bubbleCount * 3);
+  const bubbles = [];
+  for (let i = 0; i < bubbleCount; i++) {
+    bubblePos[i * 3 + 1] = -30; // parked out of sight until spawned
+    bubbles.push({ delay: Math.random() * 3, life: 0, vy: 0, x: 0, z: 0 });
+  }
+  const bubbleGeo = new THREE.BufferGeometry();
+  bubbleGeo.setAttribute('position', new THREE.BufferAttribute(bubblePos, 3));
+  const bubblePoints = new THREE.Points(bubbleGeo, new THREE.PointsMaterial({
+    color: 0xff8a26, size: 0.17, transparent: true, opacity: 0.9, map: softCircleTexture(),
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  scene.add(bubblePoints);
+
+  // --- slow dark cloud drift near the moon
+  const cloudMat = new THREE.SpriteMaterial({
+    map: softCircleTexture(), color: 0x0a0509, transparent: true, opacity: 0.55,
+    depthWrite: false, fog: false,
+  });
+  const clouds = [];
+  for (const c of [{ x: -20, y: 27.5, s: 24 }, { x: -32, y: 24, s: 30 }]) {
+    const spr = new THREE.Sprite(cloudMat);
+    spr.position.set(c.x, c.y, -66);
+    spr.scale.set(c.s, c.s * 0.3, 1);
+    scene.add(spr);
+    clouds.push({ spr, baseX: c.x, ph: Math.random() * 6.28 });
+  }
+
   // --- drifting embers
   const emberCount = 260;
   const emberPos = new Float32Array(emberCount * 3);
@@ -274,6 +344,35 @@ export function createStage(scene) {
       t.flame.scale.set(1 + f * 0.12, 1 + f * 0.2, 1 + f * 0.12);
     }
     lavaGlow.intensity = 55 + Math.sin(time * 2.2) * 10;
+    edgeGlowMat.emissiveIntensity = 1.7 + Math.sin(time * 2.2) * 0.45 + Math.sin(time * 5.3) * 0.2;
+
+    // lava bubble pops
+    const bp = bubbleGeo.attributes.position.array;
+    for (let i = 0; i < bubbleCount; i++) {
+      const b = bubbles[i];
+      if (b.delay > 0) {
+        b.delay -= dt;
+        if (b.delay <= 0) {
+          const [x, z] = BUBBLE_ZONES[Math.floor(Math.random() * BUBBLE_ZONES.length)]();
+          b.x = x; b.z = z; b.life = 0.55 + Math.random() * 0.35;
+          b.vy = 1.6 + Math.random() * 1.6;
+          bp[i * 3] = x; bp[i * 3 + 1] = -2.35; bp[i * 3 + 2] = z;
+        }
+        continue;
+      }
+      b.life -= dt;
+      if (b.life <= 0) { bp[i * 3 + 1] = -30; b.delay = 1 + Math.random() * 4; continue; }
+      b.vy -= 4.5 * dt;
+      bp[i * 3] = b.x + Math.sin(time * 7 + i) * 0.04;
+      bp[i * 3 + 1] += b.vy * dt;
+    }
+    bubbleGeo.attributes.position.needsUpdate = true;
+
+    // slow cloud drift near the moon
+    for (const c of clouds) {
+      c.spr.position.x = c.baseX + Math.sin(time * 0.05 + c.ph) * 5;
+      c.spr.position.y += Math.sin(time * 0.11 + c.ph) * dt * 0.12;
+    }
 
     const p = emberGeo.attributes.position.array;
     for (let i = 0; i < emberCount; i++) {

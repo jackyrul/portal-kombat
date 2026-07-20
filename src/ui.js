@@ -51,6 +51,7 @@ export class UI {
     this.nameEls = [$('hud-name-1'), $('hud-name-2')];
     this.pipEls = [$('hud-pips-1'), $('hud-pips-2')];
     this.comboEls = [$('combo-1'), $('combo-2')];
+    this.portraitEls = [$('hud-portrait-1'), $('hud-portrait-2')];
     this.timerEl = $('hud-timer');
     this._comboTimers = [null, null];
   }
@@ -67,6 +68,11 @@ export class UI {
   setNames(n1, n2) {
     this.nameEls[0].textContent = n1;
     this.nameEls[1].textContent = n2;
+  }
+
+  setPortraits(url1, url2) {
+    this.portraitEls[0].src = url1;
+    this.portraitEls[1].src = url2;
   }
 
   setHP(i, frac) {

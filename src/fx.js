@@ -24,6 +24,7 @@ export class FX {
     this.bursts = [];
     this.shakeAmount = 0;
     this.flashes = [];
+    this.rings = [];
   }
 
   burst(pos, { color = 0xffd75e, count = 18, speed = 5, gravity = 9, size = 0.07, life = 0.5, spread = 1, up = 0.5 } = {}) {
@@ -54,6 +55,7 @@ export class FX {
     this.burst(pos, { color: 0xffe08a, count: heavy ? 26 : 14, speed: heavy ? 7 : 4.5, size: 0.085, life: 0.35 });
     this.burst(pos, { color: 0xff8a30, count: 8, speed: 3, size: 0.06, life: 0.3 });
     this.flash(pos, 0xffd090, heavy ? 1.6 : 1.0);
+    if (heavy) this.shockwave(pos, { color: 0xffc860 });
   }
 
   blood(pos, heavy = false) {
@@ -91,6 +93,22 @@ export class FX {
     this.burst(pos, { color: 0xffffff, count: 40, speed: 8, size: 0.1, life: 0.6 });
     this.burst(pos, { color: 0xc01414, count: 50, speed: 6, gravity: 12, size: 0.09, life: 0.9, up: 1.2 });
     this.flash(pos, 0xffffff, 2.6);
+    this.shockwave(pos, { color: 0xffffff, scale: 2.4, life: 0.5 });
+    this.shockwave(pos, { color: 0xff6a20, scale: 1.6, life: 0.42 });
+  }
+
+  // expanding camera-facing ring — heavy-hit / KO shockwave
+  shockwave(pos, { color = 0xffd090, scale = 1, life = 0.35 } = {}) {
+    const geo = new THREE.RingGeometry(0.72, 1.0, 40);
+    const mat = new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity: 0.85, side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const ring = new THREE.Mesh(geo, mat);
+    ring.position.copy(pos);
+    ring.scale.setScalar(0.15 * scale);
+    this.scene.add(ring);
+    this.rings.push({ ring, geo, mat, life, maxLife: life, scale });
   }
 
   // short-lived glowing sprite at impact point
@@ -128,6 +146,16 @@ export class FX {
       }
       b.geo.attributes.position.needsUpdate = true;
       b.mat.opacity = Math.min(1, b.life / (b.maxLife * 0.5));
+    }
+
+    for (let i = this.rings.length - 1; i >= 0; i--) {
+      const r = this.rings[i];
+      r.life -= dt;
+      if (r.life <= 0) { this.scene.remove(r.ring); r.geo.dispose(); r.mat.dispose(); this.rings.splice(i, 1); continue; }
+      const k = 1 - r.life / r.maxLife;
+      const ease = 1 - (1 - k) * (1 - k); // ease-out expansion
+      r.ring.scale.setScalar((0.15 + ease * 1.35) * r.scale);
+      r.mat.opacity = 0.85 * (1 - k);
     }
 
     for (let i = this.flashes.length - 1; i >= 0; i--) {

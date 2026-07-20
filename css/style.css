@@ -25,6 +25,13 @@ body {
 
 #game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
+/* permanent cinematic vignette over the canvas, under all UI */
+#vignette {
+  position: absolute; inset: 0; z-index: 4;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 44%, transparent 52%, rgba(0,0,0,.16) 74%, rgba(0,0,0,.46) 100%);
+}
+
 .screen {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
@@ -45,6 +52,42 @@ body {
   pointer-events: none;
 }
 @keyframes flamePulse { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
+
+/* floating menu embers (pure CSS, two layers of box-shadow dots) */
+.menu-embers { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.menu-embers::before, .menu-embers::after {
+  content: ''; position: absolute; left: 0; top: 0;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: transparent;
+  animation: emberRise 11s linear infinite;
+  box-shadow:
+    7vw  104vh 1px 0 rgba(255,158,44,.85),
+    18vw 118vh 2px 1px rgba(255,120,20,.6),
+    31vw 108vh 0   0 rgba(255,190,80,.8),
+    46vw 122vh 2px 1px rgba(255,140,30,.55),
+    58vw 102vh 1px 0 rgba(255,170,60,.8),
+    71vw 116vh 2px 1px rgba(255,120,20,.6),
+    84vw 106vh 0   0 rgba(255,190,80,.75),
+    93vw 120vh 2px 1px rgba(255,150,40,.6);
+}
+.menu-embers::after {
+  width: 4px; height: 4px;
+  animation-duration: 16s; animation-delay: -7s;
+  box-shadow:
+    12vw 112vh 1px 0 rgba(255,150,40,.7),
+    26vw 124vh 2px 1px rgba(255,110,10,.5),
+    39vw 104vh 0   0 rgba(255,200,90,.7),
+    52vw 118vh 1px 0 rgba(255,150,40,.6),
+    66vw 108vh 2px 1px rgba(255,120,20,.5),
+    78vw 122vh 0   0 rgba(255,180,70,.7),
+    90vw 110vh 1px 0 rgba(255,140,30,.6);
+}
+@keyframes emberRise {
+  0%   { transform: translateY(0); opacity: 0; }
+  8%   { opacity: 1; }
+  90%  { opacity: .9; }
+  100% { transform: translateY(-128vh); opacity: 0; }
+}
 
 .dragon-logo { filter: drop-shadow(0 0 26px rgba(201,162,39,.55)); animation: logoFloat 4s ease-in-out infinite; }
 @keyframes logoFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
@@ -166,9 +209,29 @@ body {
   width: 100%; display: flex; align-items: flex-start; justify-content: space-between;
   padding: 18px 26px 0; gap: 14px;
 }
-.hud-side { flex: 1; max-width: 560px; }
+.hud-side { flex: 1; max-width: 560px; display: flex; align-items: flex-start; gap: 10px; }
 .hud-right { display: flex; justify-content: flex-end; }
 .hud-right .hp-block { align-items: flex-end; }
+
+/* MK-style portrait beside each health bar */
+.hud-portrait-frame {
+  flex: none; width: 58px; height: 58px;
+  border: 2px solid var(--gold);
+  border-radius: 3px;
+  background: #0d0400;
+  overflow: hidden;
+  transform: skewX(-6deg);
+  box-shadow: 0 3px 8px rgba(0,0,0,.7), 0 0 12px rgba(201,162,39,.3), inset 0 0 6px rgba(0,0,0,.8);
+}
+.hud-portrait-frame img {
+  width: 100%; height: 100%; display: block;
+  object-fit: cover; object-position: center top;
+  transform: skewX(6deg) scale(2.1);
+  transform-origin: 50% 24%;
+  filter: brightness(1.3) contrast(1.05);
+}
+.hud-right .hud-portrait-frame { transform: skewX(6deg); }
+.hud-right .hud-portrait-frame img { transform: skewX(-6deg) scale(2.1); }
 
 .hp-block { display: flex; flex-direction: column; gap: 4px; width: 100%; }
 .hp-name {
@@ -235,11 +298,25 @@ body {
   letter-spacing: .1em;
   color: var(--gold-bright);
   text-shadow: 0 0 18px rgba(255,170,20,.95), 0 0 70px rgba(255,90,0,.6), 0 6px 0 #3d2600;
-  animation: announcePop .38s cubic-bezier(.2,2.4,.4,1) both;
+  animation: announcePop .38s cubic-bezier(.2,2.4,.4,1) both,
+             announceGlow 1s ease-in-out .38s infinite;
   pointer-events: none;
 }
-#announce.red { color: var(--blood-bright); text-shadow: 0 0 18px rgba(255,30,30,.95), 0 0 70px rgba(255,0,0,.55), 0 6px 0 #300; }
+#announce.red {
+  color: var(--blood-bright);
+  text-shadow: 0 0 18px rgba(255,30,30,.95), 0 0 70px rgba(255,0,0,.55), 0 6px 0 #300;
+  animation: announcePop .38s cubic-bezier(.2,2.4,.4,1) both,
+             announceGlowRed 1s ease-in-out .38s infinite;
+}
 @keyframes announcePop { from { transform: scale(3.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes announceGlow {
+  0%, 100% { text-shadow: 0 0 18px rgba(255,170,20,.95), 0 0 70px rgba(255,90,0,.6), 0 6px 0 #3d2600; }
+  50%      { text-shadow: 0 0 30px rgba(255,205,70,1), 0 0 120px rgba(255,120,0,.95), 0 6px 0 #3d2600; }
+}
+@keyframes announceGlowRed {
+  0%, 100% { text-shadow: 0 0 18px rgba(255,30,30,.95), 0 0 70px rgba(255,0,0,.55), 0 6px 0 #300; }
+  50%      { text-shadow: 0 0 30px rgba(255,70,70,1), 0 0 120px rgba(255,0,0,.9), 0 6px 0 #300; }
+}
 #announce.out { animation: announceOut .3s ease-in both; }
 @keyframes announceOut { to { transform: scale(.6); opacity: 0; } }
 
@@ -271,4 +348,5 @@ body {
   .select-cell { width: 110px; height: 150px; }
   .select-cell img { height: 112px; }
   .hud-timer { font-size: 1.8rem; min-width: 68px; }
+  .hud-portrait-frame { width: 42px; height: 42px; }
 }

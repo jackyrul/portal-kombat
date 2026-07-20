@@ -123,11 +123,11 @@ export const CLIPS = {
     { t: 0.1, p: { hips: [-0.5, 0, -0.38, -0.15], spine: [0, 0.1, -0.32], kneeL: -1.85, kneeR: -1.7, hipL: [0, 0, 1.1], hipR: [0, 0, 0.72], footL: 0.75, footR: 1.0, shL: [-0.1, 0, 1.05], elL: 2.35, shR: [0.2, 0, 0.9], elR: 2.4 } },
   ]),
 
-  lightPunch: C(0.3, false, [
+  lightPunch: C(0.26, false, [
     { t: 0.0,  p: {} },
     { t: 0.06, p: { shL: [-0.1, 0, 0.5], elL: 2.4, spine: [0, 0.25, -0.1] } },
     { t: 0.13, p: { shL: [0, 0, 1.5], elL: 0.1, spine: [0, -0.35, -0.2], hips: [-0.08, 0, -0.55, -0.06] } },
-    { t: 0.3,  p: {} },
+    { t: 0.26, p: {} },
   ]),
 
   heavyPunch: C(0.55, false, [
@@ -138,11 +138,11 @@ export const CLIPS = {
     { t: 0.55, p: {} },
   ]),
 
-  lightKick: C(0.38, false, [
+  lightKick: C(0.34, false, [
     { t: 0.0,  p: {} },
     { t: 0.1,  p: { hipL: [0, 0, 1.3], kneeL: -1.7, hips: [-0.06, 0, -0.38, 0.12], spine: [0, 0.12, 0.05] } },
     { t: 0.2,  p: { hipL: [0, 0, 1.5], kneeL: -0.05, footL: 0.5, hips: [-0.02, 0, -0.38, 0.18], spine: [0, 0.12, 0.14], shL: [-0.2, 0, 0.2], elL: 1.6 } },
-    { t: 0.38, p: {} },
+    { t: 0.34, p: {} },
   ]),
 
   heavyKick: C(0.62, false, [

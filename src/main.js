@@ -111,6 +111,7 @@ function goVS() {
 }
 
 function startFight() {
+  ui.setPortraits(portraits[app.p1.id], portraits[app.p2.id]);
   ui.show('hud');
   app.inFight = true;
   const pads = [input.pads[0], app.mode.cpu ? new VirtualPad() : input.pads[1]];

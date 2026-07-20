@@ -3,7 +3,8 @@ import { CLIPS, STANCE, clonePose } from './animations.js';
 import {
   ATTACKS, STAGE_HALF_WIDTH, WALK_SPEED, BACK_SPEED, JUMP_VELOCITY, JUMP_DRIFT,
   GRAVITY, MAX_HP, FREEZE_DURATION, KNOCKDOWN_TIME, GETUP_INVULN, COMBO_DAMAGE_SCALE,
-  CHIP_RATIO,
+  CHIP_RATIO, DASH_TAP_WINDOW, DASH_TIME, DASH_SPEED, BACKDASH_SPEED, DASH_COOLDOWN,
+  INPUT_BUFFER,
 } from './config.js';
 
 const HIPS_Y = 0.96;
@@ -153,6 +154,10 @@ export class Fighter {
     this.freezeT = 0;
     this.invulnT = 0;
     this.spCooldown = 0;
+    this.dashCooldown = 0;
+    this._tapDir = 0;          // last tapped direction for double-tap dash
+    this._tapAge = Infinity;
+    this.buffered = null;      // { btn, t } attack press stored while busy
     this.controlEnabled = false;
     this.clearTint();
     this._applyCurrentPose(0);
@@ -179,6 +184,27 @@ export class Fighter {
 
   setAnim(name, restart = false) {
     if (this.animName !== name || restart) { this.animName = name; this.animT = 0; }
+  }
+
+  // Store attack presses made while busy so they fire on recovery; also called
+  // by the game during hitstop so presses aren't lost while updates are paused.
+  bufferInput(dt) {
+    if (this.buffered && (this.buffered.t -= dt) <= 0) this.buffered = null;
+    if (!this.controlEnabled) return;
+    if (!['attack', 'hitstun', 'hitcrouch', 'blockstun', 'dash'].includes(this.state)) return;
+    const pr = this.pad.pressed;
+    for (const b of ['hp', 'hk', 'lp', 'lk']) {
+      if (pr[b]) { this.buffered = { btn: b, t: INPUT_BUFFER }; break; }
+    }
+  }
+
+  startDash(dir) {
+    const rel = dir * this.facing;
+    this.state = 'dash'; this.stateT = 0;
+    this.vx = dir * (rel >= 0 ? DASH_SPEED : BACKDASH_SPEED);
+    this.dashCooldown = DASH_COOLDOWN;
+    this._tapDir = 0; this._tapAge = Infinity;
+    this.setAnim('walk', true);
   }
 
   startAttack(key, def) {
@@ -212,10 +238,18 @@ export class Fighter {
     this.stateT += dt;
     if (this.spCooldown > 0) this.spCooldown -= dt;
     if (this.invulnT > 0) this.invulnT -= dt;
+    if (this.dashCooldown > 0) this.dashCooldown -= dt;
+    this._tapAge += dt;
+    this.bufferInput(dt);
 
     switch (this.state) {
       case 'idle': case 'walk': case 'crouch': case 'block': case 'blockcrouch':
         this.updateGrounded(dt); break;
+      case 'dash':
+        if (this.stateT >= DASH_TIME) {
+          this.state = 'idle'; this.stateT = 0; this.vx = 0; this.setAnim('idle');
+        }
+        break;
       case 'jump': this.updateJump(dt); break;
       case 'attack': this.updateAttack(dt); break;
       case 'hitstun': case 'hitcrouch':
@@ -276,14 +310,25 @@ export class Fighter {
       return;
     }
 
-    // --- attacks first
+    // --- double-tap dash
+    if (pressed.left || pressed.right) {
+      const d = pressed.right ? 1 : -1;
+      if (d === this._tapDir && this._tapAge <= DASH_TAP_WINDOW && this.dashCooldown <= 0) {
+        return this.startDash(d);
+      }
+      this._tapDir = d; this._tapAge = 0;
+    }
+
+    // --- attacks first (a buffered press from recovery counts as pressed now)
     if (pressed.sp1 && this.startSpecial('sp1')) return;
     if (pressed.sp2 && this.startSpecial('sp2')) return;
+    const buf = this.buffered ? this.buffered.btn : null;
+    if (buf) this.buffered = null;
     const down = held.down;
-    if (pressed.hp) return this.startAttack(down ? 'uppercut' : 'hp', down ? ATTACKS.uppercut : ATTACKS.hp);
-    if (pressed.lp && !down) return this.startAttack('lp', ATTACKS.lp);
-    if (pressed.hk) return this.startAttack(down ? 'sweep' : 'hk', down ? ATTACKS.sweep : ATTACKS.hk);
-    if (pressed.lk && !down) return this.startAttack('lk', ATTACKS.lk);
+    if (pressed.hp || buf === 'hp') return this.startAttack(down ? 'uppercut' : 'hp', down ? ATTACKS.uppercut : ATTACKS.hp);
+    if ((pressed.lp || buf === 'lp') && !down) return this.startAttack('lp', ATTACKS.lp);
+    if (pressed.hk || buf === 'hk') return this.startAttack(down ? 'sweep' : 'hk', down ? ATTACKS.sweep : ATTACKS.hk);
+    if ((pressed.lk || buf === 'lk') && !down) return this.startAttack('lk', ATTACKS.lk);
 
     // --- jump
     if (pressed.up) {
@@ -492,6 +537,10 @@ export class Fighter {
       // play walk forward, reverse when walking backwards
       const rel = Math.sign(this.vx) * this.facing;
       this.animT += dt * (rel >= 0 ? 1.15 : -1.0);
+    } else if (this.state === 'dash') {
+      // reuse the walk clip at a sprint-like rate
+      const rel = Math.sign(this.vx) * this.facing;
+      this.animT += dt * (rel >= 0 ? 2.3 : -2.0);
     } else if (this.state === 'ko' && this.animName === 'knockdown' && this.animT >= CLIPS.knockdown.dur) {
       // hold final frame
     } else {

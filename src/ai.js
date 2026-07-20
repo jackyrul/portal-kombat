@@ -3,7 +3,7 @@
 const DIFFICULTY = {
   easy:   { think: [0.4, 0.75], blockChance: 0.15, jumpProj: 0.2, aggression: 0.4,  specialChance: 0.12, comboChance: 0.1 },
   medium: { think: [0.28, 0.5], blockChance: 0.45, jumpProj: 0.45, aggression: 0.6, specialChance: 0.22, comboChance: 0.3 },
-  hard:   { think: [0.16, 0.3], blockChance: 0.72, jumpProj: 0.65, aggression: 0.8, specialChance: 0.3,  comboChance: 0.55 },
+  hard:   { think: [0.12, 0.22], blockChance: 0.72, jumpProj: 0.65, aggression: 0.8, specialChance: 0.3,  comboChance: 0.55 },
 };
 
 export class AI {
@@ -59,7 +59,12 @@ export class AI {
       const r = Math.random();
       if (r < cfg.specialChance * 1.8) pad.press('sp1');
       else if (r < cfg.specialChance * 1.8 + 0.15) { pad.press('up'); pad.held[toward] = true; }
-      else pad.held[toward] = true;
+      else {
+        // decisive walk-in; tap direction so consecutive fast thinks read as a
+        // double-tap and trigger a dash (only hard thinks fast enough)
+        pad.press(toward);
+        pad.held[toward] = true;
+      }
       return;
     }
 
@@ -67,7 +72,7 @@ export class AI {
       const r = Math.random();
       if (r < cfg.specialChance) pad.press('sp2');
       else if (r < cfg.specialChance + 0.12) { pad.press('up'); pad.held[toward] = true; }
-      else if (r < cfg.aggression + 0.25) pad.held[toward] = true;
+      else if (r < cfg.aggression + 0.35) pad.held[toward] = true;
       else pad.held[away] = true;
       return;
     }
