@@ -22,6 +22,16 @@ python3 -m http.server 8000
 Then open http://localhost:8000. On weak GPUs add `?q=low` to the URL to
 disable bloom and shadows.
 
+### Play without a server
+
+- **Single file**: download `portal-kombat-standalone.html` and just
+  double-click it — the whole game (engine included) lives in that one file
+  and runs from `file://`, offline. Rebuild it after code changes with
+  `npm i && node build-standalone.mjs`.
+- **GitHub Pages**: enable Pages in the repository settings (Settings →
+  Pages → deploy from branch) and the game will be playable at
+  `https://<user>.github.io/portal-kombat/`.
+
 ## Features
 
 - **4 fighters**, each with a signature look and special moves:
